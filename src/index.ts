@@ -1,16 +1,18 @@
 import * as dot from 'dot-object';
 import * as _ from 'lodash';
+import * as debug from 'debug';
 
-// const dot = new DotObject('.');
+const d = debug('json-adapter');
+const log = (obj: any, msg: string = '') => d('%o / %s', obj, msg);
 
 export type primitive = string | number | boolean | null | undefined | bigint;
 
 export default class JsonAdapter {
   constructor(
     private schema: object,
-    private transformers: object,
-    private filters: object,
-    private dictionaries: object,
+    private transformers: object = {},
+    private filters: object = {},
+    private dictionaries: object = {},
   ) {}
   getDict(dict: string): [primitive, primitive][] {
     return this.dictionaries[dict];
@@ -35,19 +37,20 @@ export default class JsonAdapter {
     return defaultValue === '*' ? value : undefined;
   }
 
-  mapField(
+  mapFiellog(
     targetPath: string,
     srcPath: string,
     src: object,
     target: object,
     mods?: any,
   ) {
-    dot.str(targetPath, dot.pick(srcPath, src), target, mods);
+    dot.str(targetPath, dot.pick(srcPath, src, false), target, mods);
   }
 
   mapKey(key: string, formula: any, src: object, target: object) {
     if (_.isString(formula)) {
-      this.mapField(key, formula, src, target);
+      log({ key, formula, src, target });
+      this.mapFiellog(key, formula, src, target);
     } else if (_.isObject(formula)) {
       for (const op in formula) {
         if (op.startsWith('$')) {
@@ -57,9 +60,9 @@ export default class JsonAdapter {
           dot.str(key, formula[op], target);
         } else if (op === '$transform') {
           if (formula[op] === 'map') {
-            this.mapField(key, key, src, target, this.lookupValue.bind(this));
+            this.mapFiellog(key, key, src, target, this.lookupValue.bind(this));
           }
-          this.mapField(
+          this.mapFiellog(
             key,
             key,
             src,
@@ -90,7 +93,7 @@ export default class JsonAdapter {
             dot.pick(key, src),
           );
           if (shouldKeep) {
-            this.mapField(key, key, src, target);
+            this.mapFiellog(key, key, src, target);
           }
         }
         break;
@@ -110,12 +113,17 @@ export default class JsonAdapter {
     return Object.freeze(obj);
   }
   mapTransform(src: any): object {
+    log({ src });
     const _src = this.freezeObj(src);
+    log({ _src });
     const target = {};
     for (const key in this.schema) {
-      const formula = dot.pick(key, this.schema);
+      const formula = this.schema[key];
+      log({ key, formula });
       this.mapKey(key, formula, _src, target);
+      log({ target });
     }
+    log({ target }, '***result***');
     return target;
   }
 }
