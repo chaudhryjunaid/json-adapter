@@ -202,4 +202,36 @@ describe('index', () => {
       },
     });
   });
+  it('should not pass keys when $filter is false', function () {
+    const schema = {
+      foo: {
+        $filter: 'returnFalse',
+      },
+      'bar.bell': {
+        $filter: 'returnFalse',
+      },
+      baz: {
+        qux: {
+          $filter: 'returnFalse',
+        },
+      },
+    };
+    const adapter = new JsonAdapter(
+      schema,
+      {},
+      {
+        returnFalse: () => false,
+      },
+    );
+    const result = adapter.mapTransform({
+      foo: 'abc',
+      bar: {
+        bell: 'def',
+      },
+      baz: {
+        qux: 'ghi',
+      },
+    });
+    expect(result).toEqual({ baz: {} });
+  });
 });

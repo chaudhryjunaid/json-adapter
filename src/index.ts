@@ -27,6 +27,13 @@ export default class JsonAdapter {
     return this.filters[name];
   }
 
+  isPipeline(pipeline: string): boolean {
+    return (
+      _.isString(pipeline) ||
+      _.some(_.keys(pipeline), (key) => key.startsWith('$'))
+    );
+  }
+
   lookupValue(dictionary: string, value: primitive) {
     const dict = this.getDict(dictionary);
     let defaultValue = value;
@@ -65,6 +72,11 @@ export default class JsonAdapter {
         if (op === '$value') {
           dot.str(key, formula[op], target);
         } else if (op === '$transform') {
+          if (!_.isString(formula[op])) {
+            throw new Error(
+              'Invalid $transform! $transform key does not contain a string identifier',
+            );
+          }
           if (formula[op] === 'map') {
             this.mapField(key, key, src, target, this.lookupValue.bind(this));
           }
@@ -81,9 +93,14 @@ export default class JsonAdapter {
           }
           const concatenatedValue = _.reduce(
             formula[op],
-            (acc: any[], curr: any) => {
+            (acc: any[], pipeline: any) => {
+              if (!this.isPipeline(pipeline)) {
+                throw new Error(
+                  'Invalid $concat! non-pipeline encountered in $concat array',
+                );
+              }
               const tempTarget = {};
-              this.mapKey(key, curr, src, tempTarget);
+              this.mapKey(key, pipeline, src, tempTarget);
               acc = [...acc, dot.pick(key, tempTarget)];
               return acc;
             },
@@ -97,6 +114,11 @@ export default class JsonAdapter {
           const altValue = _.reduce(
             formula[op],
             (acc, alt) => {
+              if (!this.isPipeline(alt)) {
+                throw new Error(
+                  'Invalid $alt! non-pipeline encountered in $alt array',
+                );
+              }
               if (!!acc) {
                 return acc;
               }
@@ -112,6 +134,11 @@ export default class JsonAdapter {
           );
           dot.str(key, altValue, target);
         } else if (op === '$filter') {
+          if (!_.isString(formula[op])) {
+            throw new Error(
+              'Invalid $filter! $filter key does not contain a string identifier',
+            );
+          }
           const shouldKeep = this.getFilter(formula[op]).bind(src)(
             dot.pick(key, src),
           );
@@ -135,9 +162,9 @@ export default class JsonAdapter {
       }
     } else if (_.isArray(formula)) {
       for (const pipeline of formula) {
-        if (!_.isString(pipeline) || !_.isPlainObject(pipeline)) {
+        if (!this.isPipeline(pipeline)) {
           throw new Error(
-            'Invalid pipeline! Only strings and objects are allowed',
+            'Invalid syntax! Encountered non-pipeline in array formula!',
           );
         }
         this.mapKey(key, pipeline, src, target);
