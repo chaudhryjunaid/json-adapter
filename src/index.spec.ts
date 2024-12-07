@@ -234,4 +234,45 @@ describe('index', () => {
     });
     expect(result).toEqual({ baz: {} });
   });
+  it('test $transform: $lookup', function () {
+    const schema = {
+      gender1: { $transform: '$lookup', dictionary: 'gender' },
+      gender2: { $transform: '$lookup', dictionary: 'gender' },
+      Area: {
+        Country: {
+          $transform: '$lookup',
+          dictionary: 'country',
+        },
+      },
+    };
+    const adapter = new JsonAdapter(
+      schema,
+      {},
+      {},
+      {
+        gender: [
+          ['Male', 'M'],
+          ['Female', 'F'],
+        ],
+        country: [
+          ['Pakistan', 'PK'],
+          ['USA', 'US'],
+        ],
+      },
+    );
+    const result = adapter.mapTransform({
+      gender1: 'Male',
+      gender2: 'Female',
+      Area: {
+        Country: 'USA',
+      },
+    });
+    expect(result).toEqual({
+      gender1: 'M',
+      gender2: 'F',
+      Area: {
+        Country: 'US',
+      },
+    });
+  });
 });

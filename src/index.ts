@@ -12,11 +12,11 @@ export default class JsonAdapter {
     private schema: object,
     private transformers: object = {},
     private filters: object = {},
-    private dictionaries: object = {},
+    private dictionaries: Record<string, [primitive, primitive][]> = {},
   ) {}
 
   getDict(dict: string): [primitive, primitive][] {
-    return this.dictionaries[dict];
+    return this.dictionaries[dict] || [];
   }
 
   getTransformer(name: string): (primitive) => primitive {
@@ -77,16 +77,24 @@ export default class JsonAdapter {
               'Invalid $transform! $transform key does not contain a string identifier',
             );
           }
-          if (formula[op] === 'map') {
-            this.mapField(key, key, src, target, this.lookupValue.bind(this));
+          if (formula[op] === '$lookup') {
+            log({ key, formula, src, target });
+            this.mapField(
+              key,
+              key,
+              src,
+              target,
+              this.lookupValue.bind(this, formula['dictionary']),
+            );
+          } else {
+            this.mapField(
+              key,
+              key,
+              src,
+              target,
+              this.getTransformer(formula[op]).bind(src),
+            );
           }
-          this.mapField(
-            key,
-            key,
-            src,
-            target,
-            this.getTransformer(formula[op]).bind(src),
-          );
         } else if (op === '$concat') {
           if (!_.isArray(formula[op])) {
             throw new Error('Invalid $concat! Expected array of pipelines');
