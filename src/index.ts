@@ -101,15 +101,13 @@ export default class JsonAdapter {
         break;
       }
       if (!isPipeline) {
-        target[key] = formula;
-        log({ target });
         const miniJsonAdapter = new JsonAdapter(
           formula,
           this.transformers,
           this.filters,
           this.dictionaries,
         );
-        const miniTarget = miniJsonAdapter.mapTransform(formula);
+        const miniTarget = miniJsonAdapter.mapTransform(src[key]);
         target[key] = miniTarget;
       }
     } else if (_.isArray(formula)) {

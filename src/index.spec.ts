@@ -1,3 +1,4 @@
+import * as _ from 'lodash';
 import JsonAdapter from './index';
 
 describe('index', () => {
@@ -50,6 +51,7 @@ describe('index', () => {
   it('should transform $value', function () {
     const schema = {
       foo: { $value: 'toss' },
+      'bar.bell': { $value: 'bat' },
       baz: {
         qux: { $value: 'bun' },
       },
@@ -58,8 +60,39 @@ describe('index', () => {
     const result = adapter.mapTransform({ bar: 1, qux: 2 });
     expect(result).toEqual({
       foo: 'toss',
+      bar: {
+        bell: 'bat',
+      },
       baz: {
         qux: 'bun',
+      },
+    });
+  });
+  it('should transform $transform', function () {
+    const schema = {
+      foo: { $transform: 'isString' },
+      'bar.bell': { $transform: 'toUppercase' },
+      baz: {
+        qux: { $transform: 'toLowercase' },
+      },
+    };
+    const adapter = new JsonAdapter(schema, {
+      isString: _.isString,
+      toUppercase: _.toUpper,
+      toLowercase: _.toLower,
+    });
+    const result = adapter.mapTransform({
+      foo: 'abc',
+      bar: { bell: 'dEf' },
+      baz: { qux: 'GhI' },
+    });
+    expect(result).toEqual({
+      foo: true,
+      bar: {
+        bell: 'DEF',
+      },
+      baz: {
+        qux: 'ghi',
       },
     });
   });
