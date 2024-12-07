@@ -47,4 +47,20 @@ describe('index', () => {
       },
     });
   });
+  it('should transform $value', function () {
+    const schema = {
+      foo: { $value: 'toss' },
+      baz: {
+        qux: { $value: 'bun' },
+      },
+    };
+    const adapter = new JsonAdapter(schema);
+    const result = adapter.mapTransform({ bar: 1, qux: 2 });
+    expect(result).toEqual({
+      foo: 'toss',
+      baz: {
+        qux: 'bun',
+      },
+    });
+  });
 });

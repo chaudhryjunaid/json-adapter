@@ -37,7 +37,7 @@ export default class JsonAdapter {
     return defaultValue === '*' ? value : undefined;
   }
 
-  mapFiellog(
+  mapField(
     targetPath: string,
     srcPath: string,
     src: object,
@@ -50,19 +50,21 @@ export default class JsonAdapter {
   mapKey(key: string, formula: any, src: object, target: object) {
     if (_.isString(formula)) {
       log({ key, formula, src, target });
-      this.mapFiellog(key, formula, src, target);
+      this.mapField(key, formula, src, target);
     } else if (_.isObject(formula)) {
+      let isPipeline = false;
       for (const op in formula) {
-        if (op.startsWith('$')) {
+        if (!op.startsWith('$')) {
           continue;
         }
+        isPipeline = true;
         if (op === '$value') {
           dot.str(key, formula[op], target);
         } else if (op === '$transform') {
           if (formula[op] === 'map') {
-            this.mapFiellog(key, key, src, target, this.lookupValue.bind(this));
+            this.mapField(key, key, src, target, this.lookupValue.bind(this));
           }
-          this.mapFiellog(
+          this.mapField(
             key,
             key,
             src,
@@ -93,10 +95,22 @@ export default class JsonAdapter {
             dot.pick(key, src),
           );
           if (shouldKeep) {
-            this.mapFiellog(key, key, src, target);
+            this.mapField(key, key, src, target);
           }
         }
         break;
+      }
+      if (!isPipeline) {
+        target[key] = formula;
+        log({ target });
+        const miniJsonAdapter = new JsonAdapter(
+          formula,
+          this.transformers,
+          this.filters,
+          this.dictionaries,
+        );
+        const miniTarget = miniJsonAdapter.mapTransform(formula);
+        target[key] = miniTarget;
       }
     } else if (_.isArray(formula)) {
       for (const pipeline of formula) {
