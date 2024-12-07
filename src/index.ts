@@ -14,15 +14,19 @@ export default class JsonAdapter {
     private filters: object = {},
     private dictionaries: object = {},
   ) {}
+
   getDict(dict: string): [primitive, primitive][] {
     return this.dictionaries[dict];
   }
+
   getTransformer(name: string): (primitive) => primitive {
     return this.transformers[name];
   }
+
   getFilter(name: string): () => boolean {
     return this.filters[name];
   }
+
   lookupValue(dictionary: string, value: primitive) {
     const dict = this.getDict(dictionary);
     let defaultValue = value;
@@ -72,11 +76,14 @@ export default class JsonAdapter {
             this.getTransformer(formula[op]).bind(src),
           );
         } else if (op === '$concat') {
+          if (!_.isArray(formula[op])) {
+            throw new Error('Invalid $concat! Expected array of pipelines');
+          }
           const concatenatedValue = formula[op].reduce(
             (acc: any[], curr: any) => {
               const tempTarget = {};
               this.mapKey(key, curr, src, tempTarget);
-              acc = [...acc, tempTarget[key]];
+              acc = [...acc, dot.pick(key, tempTarget)];
               return acc;
             },
             [],
@@ -116,7 +123,9 @@ export default class JsonAdapter {
           this.dictionaries,
         );
         const miniTarget = miniJsonAdapter.mapTransform(src[key]);
-        target[key] = miniTarget;
+        const srcTarget = miniJsonAdapter.mapTransform(src);
+        log({ miniTarget, formula, srcTarget }, '***miniTarget***');
+        target[key] = _.defaultsDeep({}, miniTarget, srcTarget);
       }
     } else if (_.isArray(formula)) {
       for (const pipeline of formula) {
@@ -129,19 +138,23 @@ export default class JsonAdapter {
       }
     }
   }
+
   freezeObj(obj: any) {
     return Object.freeze(obj);
   }
+
   mapTransform(src: any): object {
     log({ src });
     const _src = this.freezeObj(src);
     log({ _src });
     const target = {};
-    for (const key in this.schema) {
-      const formula = this.schema[key];
-      log({ key, formula });
-      this.mapKey(key, formula, _src, target);
-      log({ target });
+    if (_.isPlainObject(this.schema)) {
+      for (const key in this.schema) {
+        const formula = this.schema[key];
+        log({ key, formula });
+        this.mapKey(key, formula, _src, target);
+        log({ target });
+      }
     }
     log({ target }, '***result***');
     return target;
