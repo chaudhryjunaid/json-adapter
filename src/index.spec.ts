@@ -96,4 +96,56 @@ describe('index', () => {
       },
     });
   });
+  it('should transform $concat', function () {
+    const schema = {
+      foo: {
+        $concat: [
+          'foo',
+          'bar.bell',
+          'baz.qux',
+          { $transform: 'toUppercase' },
+          { $transform: 'toLowercase' },
+        ],
+      },
+      'bar.bell': {
+        $concat: [
+          'foo',
+          'bar.bell',
+          'baz.qux',
+          { $transform: 'toUppercase' },
+          { $transform: 'toLowercase' },
+        ],
+      },
+      baz: {
+        qux: {
+          $concat: [
+            'foo',
+            'bar.bell',
+            'baz.qux',
+            { $transform: 'toUppercase' },
+            { $transform: 'toLowercase' },
+          ],
+        },
+      },
+    };
+    const adapter = new JsonAdapter(schema, {
+      isString: _.isString,
+      toUppercase: _.toUpper,
+      toLowercase: _.toLower,
+    });
+    const result = adapter.mapTransform({
+      foo: 'abc',
+      bar: {
+        bell: 'dEf',
+      },
+      baz: {
+        qux: 'GhI',
+      },
+    });
+    expect(result).toEqual({
+      foo: ['abc', 'dEf', 'GhI', 'ABC', 'abc'],
+      bar: { bell: ['abc', 'dEf', 'GhI', 'DEF', 'def'] },
+      baz: { qux: ['abc', 'dEf', 'GhI', 'GHI', 'ghi'] },
+    });
+  });
 });

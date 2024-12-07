@@ -69,20 +69,28 @@ export default class JsonAdapter {
             key,
             src,
             target,
-            this.getTransformer(formula[op]).bind(target),
+            this.getTransformer(formula[op]).bind(src),
           );
         } else if (op === '$concat') {
-          const concatenatedValue = formula[op].reduce((acc, curr) => {
-            return acc.push(dot.pick(curr, src));
-          }, []);
+          const concatenatedValue = formula[op].reduce(
+            (acc: any[], curr: any) => {
+              const tempTarget = {};
+              this.mapKey(key, curr, src, tempTarget);
+              acc = [...acc, tempTarget[key]];
+              return acc;
+            },
+            [],
+          );
           dot.str(key, concatenatedValue, target);
         } else if (op === '$alt') {
           const altValue = _.map(formula[op], (alt) => {
-            return alt.reduce((acc, curr) => {
+            return alt.reduce((acc: primitive, curr: any) => {
               if (acc) {
                 return acc;
               }
-              const currValue = dot.pick(curr, src);
+              const tempTarget = {};
+              this.mapKey(key, curr, src, tempTarget);
+              const currValue = tempTarget[key];
               if (currValue) {
                 return currValue;
               }
