@@ -79,7 +79,8 @@ export default class JsonAdapter {
           if (!_.isArray(formula[op])) {
             throw new Error('Invalid $concat! Expected array of pipelines');
           }
-          const concatenatedValue = formula[op].reduce(
+          const concatenatedValue = _.reduce(
+            formula[op],
             (acc: any[], curr: any) => {
               const tempTarget = {};
               this.mapKey(key, curr, src, tempTarget);
@@ -90,20 +91,25 @@ export default class JsonAdapter {
           );
           dot.str(key, concatenatedValue, target);
         } else if (op === '$alt') {
-          const altValue = _.map(formula[op], (alt) => {
-            return alt.reduce((acc: primitive, curr: any) => {
-              if (acc) {
+          if (!_.isArray(formula[op])) {
+            throw new Error('Invalid $alt! Expected array of pipelines');
+          }
+          const altValue = _.reduce(
+            formula[op],
+            (acc, alt) => {
+              if (!!acc) {
                 return acc;
               }
               const tempTarget = {};
-              this.mapKey(key, curr, src, tempTarget);
-              const currValue = tempTarget[key];
+              this.mapKey(key, alt, src, tempTarget);
+              const currValue = dot.pick(key, tempTarget);
               if (currValue) {
                 return currValue;
               }
-              return null;
-            }, null);
-          });
+              return undefined;
+            },
+            undefined,
+          );
           dot.str(key, altValue, target);
         } else if (op === '$filter') {
           const shouldKeep = this.getFilter(formula[op]).bind(src)(

@@ -148,4 +148,58 @@ describe('index', () => {
       baz: { qux: ['abc', 'dEf', 'GhI', 'GHI', 'ghi'] },
     });
   });
+  it('should transform $alt', function () {
+    const schema = {
+      foo: {
+        $alt: [
+          { $value: null },
+          { $transform: 'returnUndefined' },
+          'foo',
+          'bar.bell',
+          'baz.qux',
+        ],
+      },
+      'bar.bell': {
+        $alt: [
+          { $value: null },
+          { $transform: 'returnUndefined' },
+          'foo',
+          'bar.bell',
+          'baz.qux',
+        ],
+      },
+      baz: {
+        qux: {
+          $alt: [
+            { $value: null },
+            { $transform: 'returnUndefined' },
+            'foo',
+            'bar.bell',
+            'baz.qux',
+          ],
+        },
+      },
+    };
+    const adapter = new JsonAdapter(schema, {
+      returnUndefined: () => undefined,
+    });
+    const result = adapter.mapTransform({
+      foo: undefined,
+      bar: {
+        bell: undefined,
+      },
+      baz: {
+        qux: 'yay!',
+      },
+    });
+    expect(result).toEqual({
+      foo: 'yay!',
+      bar: {
+        bell: 'yay!',
+      },
+      baz: {
+        qux: 'yay!',
+      },
+    });
+  });
 });
