@@ -153,6 +153,19 @@ export default class JsonAdapter {
           if (shouldKeep) {
             this.mapField(key, key, src, target);
           }
+        } else if (op === '$iterate' && !!formula[op]) {
+          const subSchema = _.omit(formula, '$iterate');
+          const subAdapter = new JsonAdapter(
+            subSchema,
+            this.transformers,
+            this.filters,
+            this.dictionaries,
+          );
+          dot.str(
+            key,
+            _.map(dot.pick(key, src), (item) => subAdapter.mapTransform(item)),
+            target,
+          );
         }
         break;
       }

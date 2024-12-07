@@ -275,4 +275,35 @@ describe('index', () => {
       },
     });
   });
+  it('test $iterate', function () {
+    const schema = {
+      foo: 'bar',
+      baz: {
+        $iterate: true,
+        qux: 'quux',
+        tux: 'pack',
+      },
+    };
+    const adapter = new JsonAdapter(schema);
+    const result = adapter.mapTransform({
+      bar: 1,
+      baz: [
+        { quux: 2, pack: 3 },
+        { quux: 4, pack: 5 },
+      ],
+    });
+    expect(result).toEqual({
+      foo: 1,
+      baz: [
+        {
+          qux: 2,
+          tux: 3,
+        },
+        {
+          qux: 4,
+          tux: 5,
+        },
+      ],
+    });
+  });
 });
