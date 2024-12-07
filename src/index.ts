@@ -1,5 +1,7 @@
-import dot from 'dot-object';
-import _ from 'lodash';
+import * as dot from 'dot-object';
+import * as _ from 'lodash';
+
+// const dot = new DotObject('.');
 
 export type primitive = string | number | boolean | null | undefined | bigint;
 

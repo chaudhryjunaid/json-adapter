@@ -10,10 +10,10 @@ describe('index', () => {
       baz: 'qux',
     };
     const adapter = new JsonAdapter(schema, {}, {}, {});
-    const result = adapter.mapTransform({ foo: 1, baz: 2 });
+    const result = adapter.mapTransform({ bar: 1, qux: 2 });
     expect(result).toEqual({
-      bar: 1,
-      qux: 2,
+      foo: 1,
+      baz: 2,
     });
   });
 });
