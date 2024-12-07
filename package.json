@@ -1,0 +1,32 @@
+{
+  "name": "node-json-adapter",
+  "version": "1.0.0",
+  "description": "map, transform, filter, and validate json and javascript objects",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chaudhryjunaid/json-adapter.git"
+  },
+  "keywords": [
+    "json",
+    "object",
+    "map",
+    "filter",
+    "transform",
+    "validate",
+    "mapper",
+    "transformer",
+    "validator",
+    "adapter",
+    "converter"
+  ],
+  "author": "Chaudhry Junaid Anwar",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chaudhryjunaid/json-adapter/issues"
+  },
+  "homepage": "https://github.com/chaudhryjunaid/json-adapter#readme"
+}
