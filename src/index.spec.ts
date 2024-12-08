@@ -1,7 +1,14 @@
 import * as _ from 'lodash';
+import * as debug from 'debug';
+
 import JsonAdapter from './index';
 
+const log = debug('json-adapter');
+
 describe('index', () => {
+  beforeEach(() => {
+    log('===============================================');
+  });
   it('should export JsonAdapter', () => {
     expect(JsonAdapter).toBeDefined();
   });
@@ -73,7 +80,7 @@ describe('index', () => {
       foo: { $transform: 'isString' },
       'bar.bell': { $transform: 'toUppercase' },
       baz: {
-        qux: { $transform: 'toLowercase' },
+        qux: ['baz.qux', { $transform: 'toLowercase' }],
       },
     };
     const adapter = new JsonAdapter(schema, {
@@ -122,8 +129,8 @@ describe('index', () => {
             'foo',
             'bar.bell',
             'baz.qux',
-            { $transform: 'toUppercase' },
-            { $transform: 'toLowercase' },
+            ['baz.quz', { $transform: 'toUppercase' }],
+            ['baz.qux', { $transform: 'toLowercase' }],
           ],
         },
       },
@@ -234,14 +241,13 @@ describe('index', () => {
     });
     expect(result).toEqual({ baz: {} });
   });
-  it('test $transform: $lookup', function () {
+  it('test $lookup', function () {
     const schema = {
-      gender1: { $transform: '$lookup', dictionary: 'gender' },
-      gender2: { $transform: '$lookup', dictionary: 'gender' },
+      gender1: { $lookup: 'gender' },
+      gender2: { $lookup: 'gender' },
       Area: {
         Country: {
-          $transform: '$lookup',
-          dictionary: 'country',
+          $lookup: 'country',
         },
       },
     };
@@ -275,11 +281,10 @@ describe('index', () => {
       },
     });
   });
-  it('test $iterate', function () {
+  it('test array _src', function () {
     const schema = {
       foo: 'bar',
       baz: {
-        $iterate: true,
         qux: 'quux',
         tux: 'pack',
       },
