@@ -43,7 +43,7 @@ export default class JsonAdapter {
   }
 
   isOperator(op: string): boolean {
-    return this.ops[op];
+    return !!this.ops[op];
   }
 
   getOperator(formula: string | object): string {
@@ -83,6 +83,8 @@ export default class JsonAdapter {
       }
       if (key === value) {
         return mappedValue;
+      } else {
+        throw new Error(`Invalid formula type for key ${key}! Expected string, object, or array.`);
       }
     }
     return defaultValue === '*' ? value : undefined;
@@ -137,7 +139,7 @@ export default class JsonAdapter {
       } else if (op === '$lookup') {
         if (!_.isString(formula[op])) {
           throw new Error(
-            'Invalid $transform! $transform key does not contain a string identifier',
+            'Invalid $lookup! $lookup key does not contain a string identifier',
           );
         }
         log({ key, formula, src, target });
