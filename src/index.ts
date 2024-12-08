@@ -17,6 +17,7 @@ export default class JsonAdapter {
     $concat: true,
     $alt: true,
     $filter: true,
+    $iterate: true,
   };
   constructor(
     private schema: object,
@@ -117,7 +118,7 @@ export default class JsonAdapter {
     }
     if (_.isPlainObject(formula)) {
       if (!this.isPipelineObj(formula)) {
-        log({ key, formula, src, target });
+        log({ key, formula, src, target }, 'non-pipeline sub-object');
         const subAdapter = new JsonAdapter(
           formula,
           this.transformers,
@@ -126,15 +127,14 @@ export default class JsonAdapter {
         );
         const subTarget = subAdapter.mapTransform(src);
         target[key] = subTarget;
-        log(
-          { key, formula, src, target, subTarget },
-          'non-pipeline sub-object',
-        );
+        return;
       }
       const op = this.getOperator(formula);
       if (op === '$value') {
         dot.str(key, formula[op], target);
-      } else if (op === '$lookup') {
+        return;
+      }
+      if (op === '$lookup') {
         if (!_.isString(formula[op])) {
           throw new Error(
             'Invalid $lookup! $lookup key does not contain a string identifier',
@@ -148,7 +148,9 @@ export default class JsonAdapter {
           target,
           this.lookupValue.bind(this, formula[op]),
         );
-      } else if (op === '$transform') {
+        return;
+      }
+      if (op === '$transform') {
         if (!_.isString(formula[op])) {
           throw new Error(
             'Invalid $transform! $transform key does not contain a string identifier',
@@ -161,7 +163,9 @@ export default class JsonAdapter {
           target,
           this.getTransformer(formula[op]).bind(src),
         );
-      } else if (op === '$concat') {
+        return;
+      }
+      if (op === '$concat') {
         if (!_.isArray(formula[op])) {
           throw new Error(
             'Invalid $concat! Expected array of pipelines or pipeline objects',
@@ -187,7 +191,9 @@ export default class JsonAdapter {
           [],
         );
         dot.str(key, concatenatedValue, target);
-      } else if (op === '$alt') {
+        return;
+      }
+      if (op === '$alt') {
         if (!this.isPipeline(formula[op])) {
           log({ formula }, 'non-pipeline-obj in alt!');
           throw new Error('Invalid $alt! Expected array of pipelines');
@@ -209,7 +215,9 @@ export default class JsonAdapter {
           undefined,
         );
         dot.str(key, altValue, target);
-      } else if (op === '$filter') {
+        return;
+      }
+      if (op === '$filter') {
         if (!_.isString(formula[op])) {
           throw new Error(
             'Invalid $filter! $filter key does not contain a string identifier',
@@ -221,23 +229,44 @@ export default class JsonAdapter {
         if (shouldKeep) {
           this.mapField(key, key, src, target);
         }
+        return;
       }
-    } else if (_.isArray(formula)) {
+      if (op === '$iterate') {
+        const subKey = formula[op];
+        const subSrc = dot.pick(subKey, src);
+        if (!_.isArray(subSrc)) {
+          throw new Error(
+            'Invalid $iterate! Expected array at source path in $iterate',
+          );
+        }
+        const subSchema = _.cloneDeep(formula);
+        delete subSchema['$iterate'];
+        log({ subSchema, subKey, subSrc }, 'deleted iterate');
+        const subAdapter = new JsonAdapter(
+          subSchema,
+          this.transformers,
+          this.filters,
+          this.dictionaries,
+        );
+        const subTarget = subAdapter.mapTransform(subSrc);
+        dot.str(key, subTarget, target);
+      }
+      return;
+    }
+    if (this.isPipeline(formula)) {
       log({}, 'inside array formula!');
       let currentSrc = _.cloneDeep(src);
       for (const pipeline of formula) {
-        if (!this.isPipelineObj(pipeline)) {
-          throw new Error(
-            'Invalid syntax! Encountered non-pipeline in array formula!',
-          );
-        }
         const currentTarget = {};
         this.mapKey(key, pipeline, currentSrc, currentTarget);
         currentSrc = currentTarget;
         log({ currentSrc, currentTarget, formula }, '***currentSrc***');
       }
       dot.str(key, dot.pick(key, currentSrc), target);
+      return;
     }
+
+    throw new Error('Invalid formula!');
   }
 
   freezeObj(obj: any) {

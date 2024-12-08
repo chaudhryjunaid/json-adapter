@@ -246,9 +246,12 @@ describe('index', () => {
       gender1: { $lookup: 'gender' },
       gender2: { $lookup: 'gender' },
       Area: {
-        Country: ['Area.Country', {
-          $lookup: 'country',
-        }],
+        Country: [
+          'Area.Country',
+          {
+            $lookup: 'country',
+          },
+        ],
       },
     };
     const adapter = new JsonAdapter(
@@ -281,12 +284,13 @@ describe('index', () => {
       },
     });
   });
-  it('test array _src', function () {
+  it('test $iterate', function () {
     const schema = {
       foo: 'bar',
       baz: {
-        qux: 'baz.quux',
-        tux: 'baz.pack',
+        $iterate: 'baz',
+        qux: 'quux',
+        tux: 'pack',
       },
     };
     const adapter = new JsonAdapter(schema);
