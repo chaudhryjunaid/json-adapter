@@ -129,7 +129,7 @@ describe('index', () => {
             'foo',
             'bar.bell',
             'baz.qux',
-            ['baz.quz', { $transform: 'toUppercase' }],
+            ['baz.qux', { $transform: 'toUppercase' }],
             ['baz.qux', { $transform: 'toLowercase' }],
           ],
         },
@@ -246,9 +246,9 @@ describe('index', () => {
       gender1: { $lookup: 'gender' },
       gender2: { $lookup: 'gender' },
       Area: {
-        Country: {
+        Country: ['Area.Country', {
           $lookup: 'country',
-        },
+        }],
       },
     };
     const adapter = new JsonAdapter(
@@ -285,8 +285,8 @@ describe('index', () => {
     const schema = {
       foo: 'bar',
       baz: {
-        qux: 'quux',
-        tux: 'pack',
+        qux: 'baz.quux',
+        tux: 'baz.pack',
       },
     };
     const adapter = new JsonAdapter(schema);

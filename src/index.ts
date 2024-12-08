@@ -83,8 +83,6 @@ export default class JsonAdapter {
       }
       if (key === value) {
         return mappedValue;
-      } else {
-        throw new Error(`Invalid formula type for key ${key}! Expected string, object, or array.`);
       }
     }
     return defaultValue === '*' ? value : undefined;
