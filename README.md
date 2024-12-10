@@ -1,6 +1,9 @@
 # json-adapter
 map, transform, filter, and validate json and javascript objects
 
+Note: active development is in progress, please check back for updates every once in a while.
+Also, the feature-set is not complete yet. Please file issues for any functionality you need that is missing.
+One major piece that is missing is validation, which I plan to add soon.
 
 ## Quickstart
 
@@ -50,7 +53,7 @@ const userSchema = {
 };
 
 const adapter = new JsonAdapter(
-	patientSchema, 
+	userSchema, 
     transformers, 
     {}, // supposed to contain filters / untested
     dictionaries,
@@ -60,7 +63,7 @@ const adapter = new JsonAdapter(
 const mappedObj = adapter.mapTransform({
   userId: 5,
   user: {
-		name: 'john cena',
+    name: 'john cena',
   },
   gender: 'FeMaLe',
 });
