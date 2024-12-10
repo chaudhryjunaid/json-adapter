@@ -55,6 +55,36 @@ describe('index', () => {
       },
     });
   });
+  it('should map $var', function () {
+    const schema = {
+      foo: { $var: 'foo_name' },
+      'bar.bell': { $var: 'bar_bell_name' },
+      baz: {
+        qux: { $var: 'baz_qux_name' },
+      },
+    };
+    const adapter = new JsonAdapter(
+      schema,
+      {},
+      {},
+      {},
+      {
+        foo_name: 1,
+        bar_bell_name: 'bar_bell_name',
+        baz_qux_name: true,
+      },
+    );
+    const result = adapter.mapTransform({ bar: 1, qux: 2 });
+    expect(result).toEqual({
+      foo: 1,
+      bar: {
+        bell: 'bar_bell_name',
+      },
+      baz: {
+        qux: true,
+      },
+    });
+  });
   it('should transform $value', function () {
     const schema = {
       foo: { $value: 'toss' },

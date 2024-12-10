@@ -12,6 +12,7 @@ export type primitive = string | number | boolean | null | undefined | bigint;
 export default class JsonAdapter {
   private readonly ops = {
     $value: true,
+    $var: true,
     $lookup: true,
     $transform: true,
     $concat: true,
@@ -24,6 +25,7 @@ export default class JsonAdapter {
     private transformers: object = {},
     private filters: object = {},
     private dictionaries: Record<string, [primitive, primitive][]> = {},
+    private vars: Record<string, primitive | primitive[]> = {},
   ) {
     log(
       { schema, transformers, filters, dictionaries },
@@ -124,6 +126,7 @@ export default class JsonAdapter {
           this.transformers,
           this.filters,
           this.dictionaries,
+          this.vars,
         );
         const subTarget = subAdapter.mapTransform(src);
         target[key] = subTarget;
@@ -132,6 +135,10 @@ export default class JsonAdapter {
       const op = this.getOperator(formula);
       if (op === '$value') {
         dot.str(key, formula[op], target);
+        return;
+      }
+      if (op === '$var') {
+        dot.str(key, this.vars[formula[op]], target);
         return;
       }
       if (op === '$lookup') {
@@ -247,6 +254,7 @@ export default class JsonAdapter {
           this.transformers,
           this.filters,
           this.dictionaries,
+          this.vars,
         );
         const subTarget = subAdapter.mapTransform(subSrc);
         dot.str(key, subTarget, target);
@@ -280,6 +288,7 @@ export default class JsonAdapter {
       this.transformers,
       this.filters,
       this.dictionaries,
+      this.vars,
     );
     const { val } = subAdapter.mapTransform(src) as any;
     return val;
@@ -336,6 +345,7 @@ export default class JsonAdapter {
           this.transformers,
           this.filters,
           this.dictionaries,
+          this.vars,
         );
         currTarget = subAdapter.mapTransform(currSrc);
         currSrc = currTarget;
