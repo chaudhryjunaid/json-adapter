@@ -371,11 +371,13 @@ export default class JsonAdapter {
   mapTransform(src: object | object[]): object | object[] {
     const _src = this.getReadonlyCopy(src);
     log({ _src, schema: this.schema }, 'mapTransform called!');
-    let target;
     if (_.isPlainObject(this.schema)) {
       log({}, 'inside plain object schema!');
-      target = this.mapTransformWithSchemaObject(_src);
-    } else if (_.isArray(this.schema)) {
+      const target = this.mapTransformWithSchemaObject(_src);
+      log({ target }, '||result||');
+      return target;
+    }
+    if (_.isArray(this.schema)) {
       log({}, 'inside array schema!');
       let currSrc = this.getReadonlyCopy(_src);
       let currTarget = this.getSafeTarget();
@@ -391,11 +393,11 @@ export default class JsonAdapter {
         currTarget = subAdapter.mapTransform(currSrc);
         currSrc = currTarget;
       }
-      target = currTarget;
+      const target = currTarget;
+      log({ target }, '||result||');
+      return target;
     } else {
       throw new Error(`Invalid schema! Expected object or array schema`);
     }
-    log({ target }, '||result||');
-    return target;
   }
 }
