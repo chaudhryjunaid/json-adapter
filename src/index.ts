@@ -396,8 +396,7 @@ export default class JsonAdapter {
       const target = currTarget;
       log({ target }, '||result||');
       return target;
-    } else {
-      throw new Error(`Invalid schema! Expected object or array schema`);
     }
+    throw new Error(`Invalid schema! Expected object or array schema`);
   }
 }
