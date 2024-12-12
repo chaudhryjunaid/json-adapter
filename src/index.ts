@@ -24,8 +24,8 @@ export default class JsonAdapter {
     private schema: object,
     private transformers: object = {},
     private filters: object = {},
-    private dictionaries: Record<string, [primitive, primitive][]> = {},
-    private vars: Record<string, primitive | primitive[]> = {},
+    private dictionaries: Record<string, any[][]> = {},
+    private vars: Record<string, any | any[]> = {},
   ) {
     log(
       { schema, transformers, filters, dictionaries },
@@ -33,7 +33,7 @@ export default class JsonAdapter {
     );
   }
 
-  getDict(dict: string): [primitive, primitive][] {
+  getDict(dict: string): any[][] {
     return this.dictionaries[dict] || [];
   }
 

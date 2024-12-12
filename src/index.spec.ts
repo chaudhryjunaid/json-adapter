@@ -1,6 +1,5 @@
 import * as _ from 'lodash';
 import * as debug from 'debug';
-
 import JsonAdapter from './index';
 
 const log = debug('json-adapter');
@@ -12,6 +11,154 @@ describe('index', () => {
   it('should export JsonAdapter', () => {
     expect(JsonAdapter).toBeDefined();
   });
+});
+
+describe('baseline tests', () => {
+  beforeEach(() => {
+    log('===============================================');
+  });
+  it('should map fields based on schema', () => {
+    const schema = { name: 'fullName', age: 'years' };
+    const adapter = new JsonAdapter(schema);
+
+    const result = adapter.mapTransform({ fullName: 'John Doe', years: 30 });
+
+    expect(result).toEqual({ name: 'John Doe', age: 30 });
+  });
+
+  it('should handle nested fields in schema', () => {
+    const schema = {
+      'user.name': 'userProfile.name',
+      'user.age': 'userProfile.age',
+    };
+    const adapter = new JsonAdapter(schema);
+
+    const result = adapter.mapTransform({
+      userProfile: { name: 'Jane Doe', age: 40 },
+    });
+
+    expect(result).toEqual({ user: { name: 'Jane Doe', age: 40 } });
+  });
+
+  it('should transform fields using $value operator', () => {
+    const schema = { status: { $value: 'active' } };
+    const adapter = new JsonAdapter(schema);
+
+    const result = adapter.mapTransform({});
+
+    expect(result).toEqual({ status: 'active' });
+  });
+
+  it('should replace values using $var operator', () => {
+    const schema = { status: { $var: 'currentStatus' } };
+    const vars = { currentStatus: 'online' };
+    const adapter = new JsonAdapter(schema, {}, {}, {}, vars);
+
+    const result = adapter.mapTransform({});
+
+    expect(result).toEqual({ status: 'online' });
+  });
+
+  it('should apply transformations with $transform operator', () => {
+    const schema = { message: { $transform: 'toUppercase' } };
+    const transformers = {
+      toUppercase: (value: string) => value.toUpperCase(),
+    };
+    const adapter = new JsonAdapter(schema, transformers);
+
+    const result = adapter.mapTransform({ message: 'hello world' });
+
+    expect(result).toEqual({ message: 'HELLO WORLD' });
+  });
+
+  it('should use $lookup to replace values from dictionary', () => {
+    const schema = { gender: { $lookup: 'genderDict' } };
+    const dictionaries = {
+      genderDict: [
+        ['M', 'Male'],
+        ['F', 'Female'],
+      ],
+    };
+    const adapter = new JsonAdapter(schema, {}, {}, dictionaries);
+
+    const result = adapter.mapTransform({ gender: 'M' });
+
+    expect(result).toEqual({ gender: 'Male' });
+  });
+
+  it('should concatenate values using $concat operator', () => {
+    const schema = { fullName: { $concat: ['firstName', 'lastName'] } };
+    const adapter = new JsonAdapter(schema);
+
+    const result = adapter.mapTransform({ firstName: 'John', lastName: 'Doe' });
+
+    expect(result).toEqual({ fullName: ['John', 'Doe'] });
+  });
+
+  it('should choose the first valid alternative with $alt operator', () => {
+    const schema = {
+      contact: { $alt: ['phone', 'email'] },
+    };
+    const adapter = new JsonAdapter(schema);
+
+    const result = adapter.mapTransform({
+      phone: null,
+      email: 'user@example.com',
+    });
+
+    expect(result).toEqual({ contact: 'user@example.com' });
+  });
+
+  it('should include keys conditionally with $filter operator', () => {
+    const schema = { contact: { $filter: 'isPhoneAvailable' } };
+    const filters = { isPhoneAvailable: (value: any) => !!value };
+    const adapter = new JsonAdapter(schema, {}, filters);
+
+    const result = adapter.mapTransform({ contact: '1234567890' });
+
+    expect(result).toEqual({ contact: '1234567890' });
+  });
+
+  it('should transform arrays with $iterate operator', () => {
+    const schema = {
+      items: {
+        $iterate: 'items',
+        name: 'productName',
+        price: 'productPrice',
+      },
+    };
+    const adapter = new JsonAdapter(schema);
+
+    const result = adapter.mapTransform({
+      items: [
+        { productName: 'Item1', productPrice: 10 },
+        { productName: 'Item2', productPrice: 20 },
+      ],
+    });
+
+    expect(result).toEqual({
+      items: [
+        { name: 'Item1', price: 10 },
+        { name: 'Item2', price: 20 },
+      ],
+    });
+  });
+
+  it('should throw error for unsupported source types', () => {
+    const schema = {};
+    const adapter = new JsonAdapter(schema);
+
+    expect(() => adapter.mapTransform(null as any)).toThrow(
+      'Unsupported source type! Only object and array are supported at top-level',
+    );
+  });
+});
+
+describe('tests w/ src structure variation', () => {
+  beforeEach(() => {
+    log('===============================================');
+  });
+
   it('should map first-level keys', function () {
     const schema = {
       foo: 'bar',
