@@ -34,14 +34,29 @@ export default class JsonAdapter {
   }
 
   getDict(dict: string): any[][] {
+    if (!this.dictionaries[dict] || !_.isArray(this.dictionaries[dict])) {
+      throw new Error(
+        `Invalid dictionary! ${dict} not found or it is not an array`,
+      );
+    }
     return this.dictionaries[dict] || [];
   }
 
   getTransformer(name: string): (primitive) => primitive {
+    if (!this.transformers[name] || !_.isFunction(this.transformers[name])) {
+      throw new Error(
+        `Invalid transformer! ${name} not found or it is not a function`,
+      );
+    }
     return this.transformers[name];
   }
 
   getFilter(name: string): () => boolean {
+    if (!this.filters[name] || !_.isFunction(this.filters[name])) {
+      throw new Error(
+        `Invalid filter! ${name} not found or it is not a function`,
+      );
+    }
     return this.filters[name];
   }
 
@@ -54,6 +69,9 @@ export default class JsonAdapter {
       return formula;
     }
     const foundOps = _.filter(_.keys(formula), (key) => this.isOperator(key));
+    if (foundOps.length === 0) {
+      throw new Error('Invalid formula! No operators found');
+    }
     if (foundOps.length > 1) {
       throw new Error('Invalid formula! Multiple operators found');
     }
@@ -88,19 +106,7 @@ export default class JsonAdapter {
         return mappedValue;
       }
     }
-    return defaultValue === '*' ? value : undefined;
-  }
-
-  mapValue(srcPath, src, target, mods) {
-    const value = dot.pick(srcPath, src, false);
-    if (value === undefined) {
-      return;
-    }
-    if (_.isFunction(mods)) {
-      dot.str(srcPath, mods(value), target);
-    } else {
-      dot.str(srcPath, value, target, mods);
-    }
+    return defaultValue === '*' ? value : defaultValue;
   }
 
   mapField(
