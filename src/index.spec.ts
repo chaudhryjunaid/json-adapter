@@ -500,20 +500,36 @@ describe('JsonAdapter - mapTransform error cases', () => {
   const mockDictionaries = {};
   const mockVars = {};
 
-  it('should throw an error if schema is invalid (neither object nor array)', () => {
-    const invalidSchema = 'invalid-schema' as unknown; // Passing an invalid schema (string)
-    const adapter = new JsonAdapter(
-      // @ts-expect-error TS2345
-      invalidSchema,
-      mockTransformers,
-      mockFilters,
-      mockDictionaries,
-      mockVars,
-    );
+  it('should throw an error if object schema is invalid (neither object nor array)', () => {
+    const invalidSchema = 'invalid-schema' as unknown;
 
-    expect(() => adapter.mapTransform({})).toThrow(
-      /Invalid schema! Expected object or array schema/,
-    );
+    expect(
+      () =>
+        new JsonAdapter(
+          // @ts-expect-error TS2345
+          invalidSchema,
+          mockTransformers,
+          mockFilters,
+          mockDictionaries,
+          mockVars,
+        ),
+    ).toThrow(/Invalid schema! Expected object or array schema/);
+  });
+
+  it('should throw an error if array schema is invalid (neither object nor array)', () => {
+    const invalidSchema = [{ key: 'value' }, 'invalid-schema'] as unknown;
+
+    expect(
+      () =>
+        new JsonAdapter(
+          // @ts-expect-error TS2345
+          invalidSchema,
+          mockTransformers,
+          mockFilters,
+          mockDictionaries,
+          mockVars,
+        ),
+    ).toThrow(/Invalid schema! Expected object schema/);
   });
 
   it('should throw an error when schema contains unsafe properties (e.g. prototype keys)', () => {

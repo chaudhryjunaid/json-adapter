@@ -10,6 +10,7 @@ const log = (context: object, msg: any = 'DATA=') => {
 export type primitive = string | number | boolean | null | undefined | bigint;
 
 export default class JsonAdapter {
+  private readonly schema: object | object[];
   private readonly ops = {
     $value: true,
     $var: true,
@@ -21,7 +22,7 @@ export default class JsonAdapter {
     $iterate: true,
   };
   constructor(
-    private readonly schema: object,
+    schema: object | object[],
     private readonly transformers: object = {},
     private readonly filters: object = {},
     private readonly dictionaries: Record<string, any[][]> = {},
@@ -31,7 +32,7 @@ export default class JsonAdapter {
       { schema, transformers, filters, dictionaries },
       'initialized json-adapter!',
     );
-    this.schema = this.getSafeSchema(this.schema);
+    this.schema = this.getSafeSchema(schema);
   }
 
   private getReadonlyCopy(obj: any) {
@@ -43,7 +44,10 @@ export default class JsonAdapter {
     return Object.create(null);
   }
 
-  private getSafeSchema(schemaObj: object) {
+  getSafeSchemaObj(schemaObj: object) {
+    if (!_.isPlainObject(schemaObj)) {
+      throw new Error(`Invalid schema! Expected object schema`);
+    }
     const _cloned = _.cloneDeep(schemaObj);
     for (const key in _cloned) {
       if (
@@ -55,6 +59,16 @@ export default class JsonAdapter {
       }
     }
     return this.getReadonlyCopy(schemaObj);
+  }
+
+  private getSafeSchema(schema: object | object[]) {
+    if (_.isArray(schema)) {
+      return _.map(schema, (subSchema) => this.getSafeSchemaObj(subSchema));
+    }
+    if (_.isPlainObject(schema)) {
+      return this.getSafeSchemaObj(schema);
+    }
+    throw new Error(`Invalid schema! Expected object or array schema`);
   }
 
   private getDict(dict: string): any[][] {
