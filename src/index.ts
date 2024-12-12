@@ -21,11 +21,11 @@ export default class JsonAdapter {
     $iterate: true,
   };
   constructor(
-    private schema: object,
-    private transformers: object = {},
-    private filters: object = {},
-    private dictionaries: Record<string, any[][]> = {},
-    private vars: Record<string, any | any[]> = {},
+    private readonly schema: object,
+    private readonly transformers: object = {},
+    private readonly filters: object = {},
+    private readonly dictionaries: Record<string, any[][]> = {},
+    private readonly vars: Record<string, any | any[]> = {},
   ) {
     log(
       { schema, transformers, filters, dictionaries },
