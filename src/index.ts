@@ -189,6 +189,11 @@ export default class JsonAdapter {
         dot.str(key, formula[op], target);
         return;
       }
+      if (!formula[op]) {
+        throw new Error(
+          `Invalid formula! formula[${op}] should not be undefined. Formula: ${JSON.stringify(formula)}`,
+        );
+      }
       if (op === '$var') {
         dot.str(key, this.vars[formula[op]], target);
         return;
