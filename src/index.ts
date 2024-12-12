@@ -31,9 +31,34 @@ export default class JsonAdapter {
       { schema, transformers, filters, dictionaries },
       'initialized json-adapter!',
     );
+    this.schema = this.getSafeSchema(this.schema);
   }
 
-  getDict(dict: string): any[][] {
+  private getReadonlyCopy(obj: any) {
+    const _cloned = _.cloneDeep(obj);
+    return Object.freeze(_cloned);
+  }
+
+  private getSafeTarget() {
+    return Object.create(null);
+  }
+
+  private getSafeSchema(schemaObj: object) {
+    const _cloned = _.cloneDeep(schemaObj);
+    for (const key in _cloned) {
+      if (
+        key.startsWith('prototype') ||
+        key.startsWith('__proto__') ||
+        key.startsWith('constructor')
+      ) {
+        log({ key, schema: _cloned }, 'removing prototype key from schema!');
+        delete _cloned[key];
+      }
+    }
+    return this.getReadonlyCopy(schemaObj);
+  }
+
+  private getDict(dict: string): any[][] {
     if (!this.dictionaries[dict] || !_.isArray(this.dictionaries[dict])) {
       throw new Error(
         `Invalid dictionary! ${dict} not found or it is not an array`,
@@ -42,7 +67,7 @@ export default class JsonAdapter {
     return this.dictionaries[dict] || [];
   }
 
-  getTransformer(name: string): (primitive) => primitive {
+  private getTransformer(name: string): (primitive) => primitive {
     if (!this.transformers[name] || !_.isFunction(this.transformers[name])) {
       throw new Error(
         `Invalid transformer! ${name} not found or it is not a function`,
@@ -51,7 +76,7 @@ export default class JsonAdapter {
     return this.transformers[name];
   }
 
-  getFilter(name: string): () => boolean {
+  private getFilter(name: string): () => boolean {
     if (!this.filters[name] || !_.isFunction(this.filters[name])) {
       throw new Error(
         `Invalid filter! ${name} not found or it is not a function`,
@@ -60,11 +85,11 @@ export default class JsonAdapter {
     return this.filters[name];
   }
 
-  isOperator(op: string): boolean {
+  private isOperator(op: string): boolean {
     return !!this.ops[op];
   }
 
-  getOperator(formula: string | object): string {
+  private getOperator(formula: string | object): string {
     if (_.isString(formula)) {
       return formula;
     }
@@ -78,7 +103,7 @@ export default class JsonAdapter {
     return foundOps[0];
   }
 
-  isPipelineObj(pipelineObj: string | object): boolean {
+  private isPipelineObj(pipelineObj: string | object): boolean {
     if (!_.isString(pipelineObj) && !_.isPlainObject(pipelineObj)) {
       return false;
     }
@@ -88,14 +113,14 @@ export default class JsonAdapter {
     );
   }
 
-  isPipeline(pipeline: any): boolean {
+  private isPipeline(pipeline: any): boolean {
     if (!_.isArray(pipeline)) {
       return false;
     }
     return _.every(pipeline, (obj) => this.isPipelineObj(obj));
   }
 
-  lookupValue(dictionary: string, value: primitive) {
+  private lookupValue(dictionary: string, value: primitive) {
     const dict = this.getDict(dictionary);
     let defaultValue = value;
     for (const [key, mappedValue] of dict) {
@@ -109,7 +134,7 @@ export default class JsonAdapter {
     return defaultValue === '*' ? value : defaultValue;
   }
 
-  mapField(
+  private mapField(
     targetPath: string,
     srcPath: string,
     src: object,
@@ -119,7 +144,7 @@ export default class JsonAdapter {
     dot.str(targetPath, dot.pick(srcPath, src, false), target, mods);
   }
 
-  mapKey(key: string, formula: any, src: object, target: object) {
+  private mapKey(key: string, formula: any, src: object, target: object) {
     if (_.isString(formula)) {
       log({ key, formula, src, target });
       return this.mapField(key, formula, src, target);
@@ -283,11 +308,7 @@ export default class JsonAdapter {
     throw new Error('Invalid formula!');
   }
 
-  freezeObj(obj: any) {
-    return Object.freeze(obj);
-  }
-
-  mapPipeline(pipeline: any, src: object) {
+  private mapPipeline(pipeline: any, src: object) {
     log({ pipeline, src }, 'mapping pipeline...');
     const subAdapter = new JsonAdapter(
       { val: pipeline },
@@ -300,7 +321,7 @@ export default class JsonAdapter {
     return val;
   }
 
-  mapTransformObject(src: object, target: object): object {
+  private mapTransformObject(src: object, target: object): object {
     log({ src, target }, 'src is object! mapping keys...');
     for (const key in this.schema) {
       const formula = this.schema[key];
@@ -310,19 +331,19 @@ export default class JsonAdapter {
     return target;
   }
 
-  mapTransformArray(src: object[]): object[] {
+  private mapTransformArray(src: object[]): object[] {
     log({ src }, 'src is array, iterating...');
     return _.map(src, (item) => {
-      const target = {};
+      const target = this.getSafeTarget();
       this.mapTransformObject(item, target);
       return target;
     });
   }
 
-  mapTransformWithSchemaObject(src: object | object[]): object {
+  private mapTransformWithSchemaObject(src: object | object[]): object {
     let target;
     if (_.isPlainObject(src)) {
-      target = {};
+      target = this.getSafeTarget();
       this.mapTransformObject(src, target);
     } else if (_.isArray(src)) {
       target = this.mapTransformArray(src);
@@ -335,7 +356,7 @@ export default class JsonAdapter {
   }
 
   mapTransform(src: object | object[]): object | object[] {
-    const _src = this.freezeObj(src);
+    const _src = this.getReadonlyCopy(src);
     log({ _src, schema: this.schema }, 'mapTransform called!');
     let target;
     if (_.isPlainObject(this.schema)) {
@@ -343,11 +364,12 @@ export default class JsonAdapter {
       target = this.mapTransformWithSchemaObject(_src);
     } else if (_.isArray(this.schema)) {
       log({}, 'inside array schema!');
-      let currSrc = _.cloneDeep(_src);
-      let currTarget = {};
+      let currSrc = this.getReadonlyCopy(_src);
+      let currTarget = this.getSafeTarget();
       for (const subSchema of this.schema) {
+        const _subSchema = this.getSafeSchema(subSchema);
         const subAdapter = new JsonAdapter(
-          subSchema,
+          _subSchema,
           this.transformers,
           this.filters,
           this.dictionaries,
