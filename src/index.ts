@@ -157,7 +157,12 @@ export default class JsonAdapter {
     dot.str(targetPath, dot.pick(srcPath, src, false), target, mods);
   }
 
-  private mapKey(key: string, formula: any, src: object, target: object) {
+  private mapKey(
+    key: string,
+    formula: string | object | object[],
+    src: Record<string, any>,
+    target: Record<string, any>,
+  ) {
     if (_.isString(formula)) {
       log({ key, formula, src, target });
       return this.mapField(key, formula, src, target);
@@ -287,7 +292,7 @@ export default class JsonAdapter {
         const subSrc = dot.pick(subKey, src);
         if (!_.isArray(subSrc)) {
           throw new Error(
-            'Invalid $iterate! Expected array at source path in $iterate',
+            `Invalid $iterate! Expected array at src path ${subKey} in $iterate`,
           );
         }
         const subSchema = _.cloneDeep(formula);
@@ -305,20 +310,23 @@ export default class JsonAdapter {
       }
       return;
     }
-    if (this.isPipeline(formula)) {
+    if (_.isArray(formula) && this.isPipeline(formula)) {
       log({}, 'inside array formula!');
-      let currentSrc = _.cloneDeep(src);
+      let currentSrc = this.getReadonlyCopy(src);
       for (const pipeline of formula) {
-        const currentTarget = {};
+        const currentTarget = this.getSafeTarget();
         this.mapKey(key, pipeline, currentSrc, currentTarget);
         currentSrc = currentTarget;
-        log({ currentSrc, currentTarget, formula }, '***currentSrc***');
+        log(
+          { currentSrc, currentTarget, formula },
+          'currentSrc, currentTarget in formula pipeline!',
+        );
       }
       dot.str(key, dot.pick(key, currentSrc), target);
       return;
     }
 
-    throw new Error('Invalid formula!');
+    throw new Error(`Invalid formula! Formula: ${JSON.stringify(formula)}`);
   }
 
   private mapPipeline(pipeline: any, src: object) {
