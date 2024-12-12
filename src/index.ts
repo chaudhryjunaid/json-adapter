@@ -163,6 +163,9 @@ export default class JsonAdapter {
     src: Record<string, any>,
     target: Record<string, any>,
   ) {
+    if (!formula) {
+      throw new Error(`Invalid formula! Formula: ${JSON.stringify(formula)}`);
+    }
     if (_.isString(formula)) {
       log({ key, formula, src, target });
       return this.mapField(key, formula, src, target);
