@@ -493,3 +493,43 @@ describe('tests w/ src structure variation', () => {
     });
   });
 });
+
+describe('JsonAdapter - mapTransform error cases', () => {
+  const mockTransformers = {};
+  const mockFilters = {};
+  const mockDictionaries = {};
+  const mockVars = {};
+
+  it('should throw an error if schema is invalid (neither object nor array)', () => {
+    const invalidSchema = 'invalid-schema' as unknown; // Passing an invalid schema (string)
+    const adapter = new JsonAdapter(
+      // @ts-expect-error TS2345
+      invalidSchema,
+      mockTransformers,
+      mockFilters,
+      mockDictionaries,
+      mockVars,
+    );
+
+    expect(() => adapter.mapTransform({})).toThrow(
+      /Invalid schema! Expected object or array schema/,
+    );
+  });
+
+  it('should throw an error when schema contains unsafe properties (e.g. prototype keys)', () => {
+    const unsafeSchema = {
+      constructor: () => 'malicious code', // Unsafe schema contains a prototype-related key
+    };
+
+    expect(
+      () =>
+        new JsonAdapter(
+          unsafeSchema,
+          mockTransformers,
+          mockFilters,
+          mockDictionaries,
+          mockVars,
+        ),
+    ).toThrow(/Invalid schema! constructor is a reserved property name/);
+  });
+});

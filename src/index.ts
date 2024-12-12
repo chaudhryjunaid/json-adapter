@@ -51,8 +51,7 @@ export default class JsonAdapter {
         key.startsWith('__proto__') ||
         key.startsWith('constructor')
       ) {
-        log({ key, schema: _cloned }, 'removing prototype key from schema!');
-        delete _cloned[key];
+        throw new Error(`Invalid schema! ${key} is a reserved property name`);
       }
     }
     return this.getReadonlyCopy(schemaObj);
@@ -325,7 +324,7 @@ export default class JsonAdapter {
     log({ src, target }, 'src is object! mapping keys...');
     for (const key in this.schema) {
       const formula = this.schema[key];
-      log({ src, target, key, formula }, '***mapping***');
+      log({ src, target, key, formula }, 'mapping schema key!');
       this.mapKey(key, formula, src, target);
     }
     return target;
@@ -341,7 +340,7 @@ export default class JsonAdapter {
   }
 
   private mapTransformWithSchemaObject(src: object | object[]): object {
-    let target;
+    let target: any;
     if (_.isPlainObject(src)) {
       target = this.getSafeTarget();
       this.mapTransformObject(src, target);
