@@ -58,6 +58,12 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   },
+  "lint-staged": {
+    "**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
   "jest": {
     "moduleDirectories": [
       "node_modules",
