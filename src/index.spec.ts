@@ -13,6 +13,160 @@ describe('index', () => {
   });
 });
 
+describe('JsonAdapter - lookupValue', () => {
+  let adapter: JsonAdapter;
+
+  beforeEach(() => {
+    // Mock schema and initialize JsonAdapter
+    const schema = {};
+    adapter = new JsonAdapter(
+      schema,
+      {},
+      {},
+      {
+        sampleDict: [
+          ['key1', 'value1'],
+          ['key2', 'value2'],
+          ['*', 'defaultValue'],
+        ],
+      },
+    );
+  });
+
+  it('should return the mapped value for an exact match', () => {
+    const result = adapter.lookupValue('sampleDict', 'key1');
+    expect(result).toBe('value1');
+  });
+
+  it('should return the default value if no match is found', () => {
+    const result = adapter.lookupValue('sampleDict', 'unknownKey');
+    expect(result).toBe('defaultValue');
+  });
+
+  it('should throw an error if the dictionary is not found', () => {
+    expect(() => adapter.lookupValue('invalidDict', 'key1')).toThrow(
+      'Invalid dictionary! invalidDict not found or it is not an array',
+    );
+  });
+
+  it('should return the mapped value for a "starts with" wildcard match', () => {
+    const schema = {};
+    adapter = new JsonAdapter(
+      schema,
+      {},
+      {},
+      {
+        wildcardDict: [['*End', 'matchedValue']],
+      },
+    );
+    const result = adapter.lookupValue('wildcardDict', 'someEnd');
+    expect(result).toBe('matchedValue');
+  });
+
+  it('should return the mapped value for an "ends with" wildcard match', () => {
+    const schema = {};
+    adapter = new JsonAdapter(
+      schema,
+      {},
+      {},
+      {
+        wildcardDict: [['start*', 'matchedValue']],
+      },
+    );
+    const result = adapter.lookupValue('wildcardDict', 'startSomething');
+    expect(result).toBe('matchedValue');
+  });
+
+  it('should return the mapped value for a "contains" wildcard match', () => {
+    const schema = {};
+    adapter = new JsonAdapter(
+      schema,
+      {},
+      {},
+      {
+        wildcardDict: [['*Middle*', 'matchedValue']],
+      },
+    );
+    const result = adapter.lookupValue(
+      'wildcardDict',
+      'inTheMiddleOfSomething',
+    );
+    expect(result).toBe('matchedValue');
+  });
+
+  it('should prioritize exact match over wildcard match', () => {
+    const schema = {};
+    adapter = new JsonAdapter(
+      schema,
+      {},
+      {},
+      {
+        priorityDict: [
+          ['*Key*', 'wildcardValue'],
+          ['exactKey', 'exactValue'],
+        ],
+      },
+    );
+    const result = adapter.lookupValue('priorityDict', 'exactKey');
+    expect(result).toBe('exactValue');
+  });
+
+  it('should handle empty dictionaries gracefully', () => {
+    const schema = {};
+    adapter = new JsonAdapter(schema, {}, {}, { emptyDict: [] });
+    const result = adapter.lookupValue('emptyDict', 'anyKey');
+    expect(result).toBe(undefined);
+  });
+
+  it('should return the undefined in case of no-match if no wildcard is specified', () => {
+    const schema = {};
+    adapter = new JsonAdapter(
+      schema,
+      {},
+      {},
+      {
+        wildcardDict: [['nokey', 'novalue']],
+      },
+    );
+    const result = adapter.lookupValue('wildcardDict', 'testKey');
+    expect(result).toBe(undefined);
+  });
+
+  it('should return the mapped value if a blanket wildcard is specified', () => {
+    const schema = {};
+    adapter = new JsonAdapter(
+      schema,
+      {},
+      {},
+      {
+        wildcardDict: [
+          ['nokey', 'novalue'],
+          ['*', 'matchedValue'],
+        ],
+      },
+    );
+    const result = adapter.lookupValue('wildcardDict', 'testKey');
+    expect(result).toBe('matchedValue');
+  });
+
+  it('should return the same value if a blanket wildcard is specified with a blanket match target', () => {
+    const schema = {};
+    adapter = new JsonAdapter(
+      schema,
+      {},
+      {},
+      {
+        wildcardDict: [
+          ['nokey', 'novalue'],
+          ['*', '*'],
+        ],
+      },
+    );
+    const result = adapter.lookupValue('wildcardDict', 'testKey');
+    expect(result).toBe('testKey');
+  });
+});
+
 describe('baseline tests', () => {
   beforeEach(() => {
     log('===============================================');
