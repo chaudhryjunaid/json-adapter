@@ -44,7 +44,7 @@ export default class JsonAdapter {
     return Object.create(null);
   }
 
-  getSafeSchemaObj(schemaObj: object) {
+  private getSafeSchemaObj(schemaObj: object) {
     if (!_.isPlainObject(schemaObj)) {
       throw new Error(`Invalid schema! Expected object schema`);
     }
@@ -133,18 +133,43 @@ export default class JsonAdapter {
     return _.every(pipeline, (obj) => this.isPipelineObj(obj));
   }
 
-  private lookupValue(dictionary: string, value: primitive) {
+  public lookupValue(dictionary: string, value: string) {
     const dict = this.getDict(dictionary);
-    let defaultValue = value;
+    let defaultValue = undefined;
     for (const [key, mappedValue] of dict) {
-      if (key === '*') {
-        defaultValue = mappedValue;
-      }
-      if (key === value) {
+      if (key === value && key !== '*') {
         return mappedValue;
       }
     }
-    return defaultValue === '*' ? value : defaultValue;
+    for (const [key, mappedValue] of dict) {
+      if (key !== '*' && key.startsWith('*') && value.endsWith(key.slice(1))) {
+        return mappedValue;
+      }
+    }
+    for (const [key, mappedValue] of dict) {
+      if (
+        key !== '*' &&
+        key.endsWith('*') &&
+        value.startsWith(key.slice(0, -1))
+      ) {
+        return mappedValue;
+      }
+    }
+    for (const [key, mappedValue] of dict) {
+      if (key === '*') {
+        log({ key, mappedValue, value }, 'found *');
+        defaultValue = (mappedValue === '*' ? value : mappedValue) as any;
+      }
+      if (
+        key !== '*' &&
+        key.startsWith('*') &&
+        key.endsWith('*') &&
+        value.includes(key.slice(1, -1))
+      ) {
+        return mappedValue;
+      }
+    }
+    return defaultValue;
   }
 
   private mapField(
